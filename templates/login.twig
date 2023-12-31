@@ -1,0 +1,38 @@
+{% extends "layouts/default.twig" %}
+
+{% block content %}
+
+	<h1>Login</h1>
+   
+	{% if (app.session.logged_in != 'yes') %}
+
+		<div class="login-form w-100 m-auto">
+			<form action="{{ app.url('/login') }}" method="POST">
+				<div class="mb-3">
+					<label class="form-label">Username</label>
+					<input class="form-control" type="text" name="user" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Password</label>
+					<input class="form-control" type="password" name="pass" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">OTP Code</label>
+					<input class="form-control" type="text" name="code" />
+				</div>
+
+				<button type="submit" class="btn btn-primary w-100 py-2 mt-4">Login</button>
+			</form>
+
+			{% if error %}<div style="border: 1px solid red; margin-top:10px; padding:5px;">{{ error }}</div>{% endif %}
+		</div>
+
+	{% else %}
+
+		<a href="{{ app.url('/logout') }}">Logout</a>
+
+	{% endif %}
+	
+{% endblock %}

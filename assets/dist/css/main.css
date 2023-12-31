@@ -1,0 +1,9 @@
+.login-form {
+  max-width: 430px;
+  padding: 1rem;
+}
+.login-form input[name=code] {
+  width: 50%;
+}
+
+/*# sourceMappingURL=main.css.map */

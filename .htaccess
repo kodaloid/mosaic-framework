@@ -1,0 +1,11 @@
+Options +FollowSymLinks -MultiViews
+# Turn mod_rewrite on
+
+# BEGIN KCMS
+RewriteEngine On
+RewriteBase /mosaic-cms/
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?page=$1&%{QUERY_STRING} [NC,L]
+# END KCMS

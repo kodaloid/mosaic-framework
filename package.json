@@ -1,0 +1,27 @@
+{
+	"name": "mosaic-cms",
+	"productName": "Mosaic CMS",
+	"version": "0.0.1",
+	"description": "",
+	"scripts": {
+		"sass-dev": "sass --watch --update --style=expanded assets/src/scss:assets/dist/css",
+		"sass-prod": "sass --no-source-map --style=compressed assets/src/scss:assets/dist/css",
+		"ts-dev": "npx tsc --watch",
+		"ts-prod": "npx tsc",
+		"dev": "concurrently \"npm run sass-dev\" \"npm run ts-dev\"",
+		"prod": "concurrently \"npm run sass-prod\" \"npm run ts-prod\""
+	},
+	"keywords": [],
+	"author": {
+		"name": "Kodaloid",
+		"email": "info@kodaloid.com"
+	},
+	"license": "MIT",
+	"devDependencies": {
+		"sass": "^1.69.5",
+		"typescript": "~4.5.4"
+	},
+	"dependencies": {
+		"concurrently": "^8.2.2"
+	}
+}
