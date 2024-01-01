@@ -155,6 +155,18 @@ Or in a twig template you could do this:
 {% app.plugin('test').say_hello() %}
 ```
 
+## Assets (CSS, SASS, JavaScript & TypeScript)
+
+The assets folder contains a `src` folder, and a `dist` folder. Most of your CSS, 
+JavaScript, and other assets like images should reside in the `dist` folder. The
+`src` folder is used for storing un-compiled SASS and TypeScript files.
+
+This project includes a `package.json` file with a number of useful scripts. To
+use them first make sure you have NodeJS installed, then in the terminal type `npm install` (only needs to be done once) to download the necessary dependencies.
+
+To compile both SASS and TypeScript, you can then use either `npm run dev` (startup watch on both compilers) or `npm run prod` to compile once.
+
+
 ## Conclusion
 
 If you have any issues please raise using GitHub issues. There are not that many
