@@ -2,7 +2,9 @@
 
 
 // get the config file.
-include 'config.php';
+if (file_exists('config.php')) {
+	include 'config.php';
+}
 
 
 // load composer.
@@ -26,12 +28,15 @@ spl_autoload_register(function ($class) {
 
 
 // load system includes.
+require_once __APP__ . '/system/Utilities/FormErrors.php';
 require_once __APP__ . '/system/App.php';
 require_once __APP__ . '/system/Controller.php';
-require_once __APP__ . '/system/Database.php';
+require_once __APP__ . '/system/MosDatabase.php';
+require_once __APP__ . '/system/MosRequest.php';
+require_once __APP__ . '/system/MosSession.php';
+require_once __APP__ . '/system/MosTools.php';
 require_once __APP__ . '/system/Polyfill.php';
-require_once __APP__ . '/system/RequestHandler.php';
-require_once __APP__ . '/system/Session.php';
+require_once __APP__ . '/system/Twig.php';
 
 
 // init sessions (ran after spl_autoload as session_start can use autoload).

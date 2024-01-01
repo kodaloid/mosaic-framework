@@ -7,7 +7,7 @@ use OTPHP\TOTP;
  * Tools to manage online visitor sessions. Including logging in, registering,
  * and 2FA OTP processing.
  */
-class Session {
+class MosSession {
 	private $_logged_in;
 	private $_user_id;
 
@@ -37,7 +37,7 @@ class Session {
 	/**
 	 * Perform a login.
 	 */
-	public function login($user_id, $redirect = false) {
+	public function login(string $user_id, string $redirect = null) {
 		global $app;
 		$this->_logged_in = $_SESSION['logged_in'] = 'yes';
 		$this->_user_id = $_SESSION['user_id'] = $user_id;
@@ -50,12 +50,12 @@ class Session {
 	/**
 	 * Perform a logout.
 	 */
-	public function logout($redirect = false) {
+	public function logout(string $redirect = null) {
 		global $app;
 		session_destroy();
 		$this->_logged_in = false;
 		$this->_user_id = null;
-		if (false !== $redirect) {
+		if (!is_null($redirect)) {
 			$app->redirect($redirect);
 		}
 	}
@@ -64,7 +64,7 @@ class Session {
 	/**
 	 * Create a new user.
 	 */
-	public function create_user($username, $email, $password) {
+	public function create_user(string $username, string $email, string $password) {
 		global $db;
 
 		$otp = TOTP::create();
@@ -101,7 +101,7 @@ class Session {
 	/**
 	 * Get a user by the username.
 	 */
-	function get_user_by_username($username) {
+	function get_user_by_username(string $username) {
 		global $db;
 		return $db->select_row($db->prepare(
 			'SELECT * FROM users WHERE username = ?', 's', [$username]
@@ -112,21 +112,25 @@ class Session {
 	/**
 	 * Get the (qr code) image url used for setting up the authenticator.
 	 */
-	function get_otp_image($user_id) {
+	function get_otp_image(int $user_id, string $app_name) {
+		global $app;
+
 		$user = $this->get_user($user_id);
 		$otp = TOTP::create($user->otp_secret);
-		$otp->setLabel('KCMS Website');
-		return $otp->getQrCodeUri(
-			'https://api.qrserver.com/v1/create-qr-code/?data=[DATA]&size=300x300&ecc=M',
-			'[DATA]'
-	  	);
+		$otp->setLabel($app_name);
+
+		$code = $otp->getProvisioningUri();
+		$image = $app->tools->GenerateQrImage($code);
+		// $image = $otp->getQrCodeUri('https://api.qrserver.com/v1/create-qr-code/?data=[DATA]&size=300x300&ecc=M', '[DATA]');
+
+		return $image;
 	}
 
 
 	/**
 	 * Check to see if a user/pass is correct.
 	 */
-	function validate_login($user, $password) {
+	function validate_login(object $user, string $password) {
 		if (is_null($user)) return false;
 		$pwd_peppered = hash_hmac("sha256", $password, PASSWORD_SALT);
 		return password_verify($pwd_peppered, $user->pass_hash);
@@ -136,7 +140,7 @@ class Session {
 	/**
 	 * Validate an otp code against a users otp secret.
 	 */
-	function validate_otp($user, $code) {
+	function validate_otp(object $user, string $code) {
 		$otp = TOTP::create($user->otp_secret);
 		return $otp->verify($code);
 	}

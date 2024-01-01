@@ -21,11 +21,9 @@ This framework requires the following to be available:
 
 ## How To Install
 
-First create a database on your MySQLi compatible server. Then visit 
-`http://[site_url]/setup` and walk through the process on setting up the 
-database, and creating a new admin user.
-
-Next try to login to your website via `http://[site_url]/login`.
+First create a database on your MySQLi compatible server. Then visit your website
+URL and walk through the process on setting up the database, and creating a new 
+admin user (if required).
 
 That's all!
 

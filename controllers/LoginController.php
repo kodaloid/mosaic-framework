@@ -6,7 +6,7 @@ class LoginController extends Controller {
 	/**
 	 * Show the login screen.
 	 */
-	function login($app) {
+	function login(App $app) {
 		if ($app->request->is_post) {
 			$username = $app->request->post('user');
 			$pass     = $app->request->post('pass');
@@ -32,28 +32,8 @@ class LoginController extends Controller {
 	/**
 	 * Logout and redirect to the login screen
 	 */
-	function logout($app) {
+	function logout(App $app) {
 		$redirect = $app->url('/login');
 		$app->session->logout($redirect);
-	}
-
-
-	/**
-	 * Handle the registration page.
-	 */
-	function register($app) {
-		global $db;
-
-		// create the user.
-		$res = $app->session->create_user('admin', 'test@localhost', 'test123');
-		$user_id = $res->id;
-
-		// login without redirect.
-		$app->session->login();
-
-		// return a logged-in view, with otp_image generated.
-		return $this->view('registered', array(
-			'otp_image' => $app->session->get_otp_image($user_id)
-		));
 	}
 }

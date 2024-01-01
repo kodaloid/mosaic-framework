@@ -2,7 +2,7 @@
 
 
 abstract class Controller {
-	protected function view($view_name, $args = []) {
+	protected function view(string $view_name, array $args = []) {
 		global $twig;
 		global $app;
 		if (!str_contains($view_name, '.twig')) {

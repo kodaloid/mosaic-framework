@@ -5,23 +5,26 @@
  */
 class App {
 	// an array of mapped routes.
-	private $routes;
-	private $plugins;
-	public $request;
-	public $session;
+	private array $routes;
+	private array $plugins;
+	public MosRequest $request;
+	public MosSession $session;
+	public bool $is_new;
+	public MosTools $tools;
 
 	
 	function __construct() {
 		$this->routes = [];
 		$this->plugins = [];
-		$this->request = new RequestHandler();
-		$this->session = new Session();
+		$this->request = new MosRequest();
+		$this->session = new MosSession();
+		$this->is_new = !defined('SITE_URL');
+		$this->tools = new MosTools();
 
-		if (LOGIN_ENABLED) {
+		if (defined('LOGIN_ENABLED') && LOGIN_ENABLED) {
 			$this->route("/login/", 'LoginController', 'login');
 			$this->route("/login/", 'LoginController', 'login', ['GET', 'POST']);
 			$this->route("/logout", 'LoginController', 'logout');
-			$this->route("/register", "LoginController", 'register');
 		}
 	}
 
@@ -29,10 +32,10 @@ class App {
 	/**
 	 * Route a specific URL scheme to a controller.
 	 * @param $url The scheme, for example /products/test
-	 * @param $controller The name of a controller class to instanciate.
+	 * @param $controller The name of a controller class to instantiate.
 	 * @param $method The name of the static controller method to call (leave empty for index).
 	 */
-	function route($url, $controller, $method = 'index', $http_methods = ['GET']) {
+	function route(string $url, string $controller, string $method = 'index', array $http_methods = ['GET']) {
 		if (strlen($url) > 1) $url = rtrim($url, '/');
 		$this->routes[$url] = (object)array(
 			'controller' => $controller,
@@ -46,7 +49,7 @@ class App {
 	/**
 	 * Add & initialize a plugin into the global plugin namespace.
 	 */
-	function add_plugin($name, $className) {
+	function add_plugin(string $name, string $className) {
 		if (!class_exists($className)) {
 			trigger_error("Plugin $className does not exist.", E_USER_ERROR);
 			exit;
@@ -60,7 +63,7 @@ class App {
 	 * Run the app.
 	 */
 	function run() {
-		$url = $this->request->relative_url;
+		$url = $this->is_new ? '/' : $this->request->relative_url;
 
 		// get the route.
 		$route = isset($this->routes[$url]) ? $this->routes[$url] : null;
@@ -81,21 +84,42 @@ class App {
 		http_response_code(404);
 		header('Content-Type: text/plain');
 		echo "404 - Error page $url not found.";
-		var_dump($this->routes);
 	}
 
 
-	function plugin($name) {
+	/**
+	 * Called when the setup needs to be displayed, see index.php
+	 */
+	function run_setup() {
+		global $twig;
+		// add a setup controller.
+		define('SITE_NAME', 'Mosaic CMS');
+		$twig->addGlobal('SITE_NAME', SITE_NAME);
+		$this->route('/', 'SetupController', 'index', ['GET', 'POST']);
+		$this->run();
+	}
+
+
+	/**
+	 * Retrieve a named plugin instance.
+	 */
+	function plugin(string $name) {
 		return isset($this->plugins[$name]) ? $this->plugins[$name] : null;
 	}
 
 
-	function redirect($url) {
+	/**
+	 * Redirect the browser to another URL.
+	 */
+	function redirect(string $url) {
 		header("Location: $url");
 	}
 
 
-	function url($url) {
-		return SITE_URL . ltrim($url, '/');
+	/**
+	 * Get a fully qualified URL from a relative one.
+	 */
+	function url(string $relative_url) {
+		return SITE_URL . ltrim($relative_url, '/');
 	}
 }

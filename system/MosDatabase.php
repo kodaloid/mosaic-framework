@@ -1,19 +1,38 @@
 <?php
 
-class Database {
+class MosDatabase {
 	private $conn;
 
 	
 	function __construct() {
 		/* You should enable error reporting for mysqli before attempting to make a connection */
 		mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-	
+	}
+
+
+	/**
+	 * Connect using default details.
+	 */
+	function connect_default() {
 		/* Set the desired charset after establishing a connection */
-		$this->conn = new mysqli(DB_HOST, DB_USER, DB_PASS,	DB_NAME);
+		$this->conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 		$this->conn->set_charset(DB_CHARSET);
 	}
 
 
+	/**
+	 * Connect using custom details.
+	 */
+	function connect_manual(string $host, string $name, string $user, string $pass) {
+		/* Set the desired charset after establishing a connection */
+		$this->conn = new mysqli($host, $user, $pass, $name);
+		$this->conn->set_charset(DB_CHARSET);
+	}
+
+
+	/**
+	 * Create a prepared statement.
+	 */
 	function prepare(string $query, string $types, array $data) {
 		$stmt = $this->conn->prepare($query);
 		$params = [];
@@ -77,6 +96,9 @@ class Database {
 	}
 
 
+	/**
+	 * Get the last inserted row id.
+	 */
 	function insert_id() {
 		return $this->conn->insert_id;
 	}
