@@ -37,11 +37,13 @@ class MosSession {
 	/**
 	 * Perform a login.
 	 */
-	public function login(string $user_id, string $redirect = null) {
+	public function login(string $user_id, ?string $redirect = null) {
 		global $app;
 		$this->_logged_in = $_SESSION['logged_in'] = 'yes';
 		$this->_user_id = $_SESSION['user_id'] = $user_id;
-		if (false !== $redirect) {
+
+		$redirect = $redirect ?? SITE_URL;
+		if (false !== $redirect && !is_null($redirect)) {
 			$app->redirect($redirect);
 		}
 	}
@@ -50,12 +52,14 @@ class MosSession {
 	/**
 	 * Perform a logout.
 	 */
-	public function logout(string $redirect = null) {
+	public function logout(?string $redirect = null) {
 		global $app;
 		session_destroy();
 		$this->_logged_in = false;
 		$this->_user_id = null;
-		if (!is_null($redirect)) {
+
+		$redirect = $redirect ?? SITE_URL;
+		if (false !== $redirect && !is_null($redirect)) {
 			$app->redirect($redirect);
 		}
 	}
@@ -72,13 +76,15 @@ class MosSession {
 		$pwd_peppered = hash_hmac("sha256", $password, PASSWORD_SALT);
 
 		$ins_query = "INSERT INTO users (username, email, pass_hash, otp_secret, date_created) VALUES (?,?,?,?,?)";
-		$db->exec($db->prepare($ins_query, "sssss", array(
+		$stmt = $db->prepare($ins_query, "sssss", array(
 			$username,
 			$email,
 			password_hash($pwd_peppered, PASSWORD_ARGON2ID),
 			$otp_secret,
 			$db->now()
-		)));
+		));
+		
+		$db->exec($stmt);
 
 		return (object)array(
 			'id' => $db->insert_id(),

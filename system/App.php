@@ -35,11 +35,12 @@ class App {
 	 * @param $controller The name of a controller class to instantiate.
 	 * @param $method The name of the static controller method to call (leave empty for index).
 	 */
-	function route(string $url, string $controller, string $method = 'index', array $http_methods = ['GET']) {
+	//function route(string $url, string $controller, string $method = 'index', array $http_methods = ['GET']) {
+	function route(string $url, string $class, string $func = 'index', array $http_methods = ['GET']) {
 		if (strlen($url) > 1) $url = rtrim($url, '/');
 		$this->routes[$url] = (object)array(
-			'controller' => $controller,
-			'method' => $method,
+			'controller' => $class,
+			'method' => $func,
 			'http_methods' => $http_methods,
 			'scheme' => $url
 		);
@@ -63,9 +64,16 @@ class App {
 	 * Run the app.
 	 */
 	function run() {
-		$url = $this->is_new ? '/' : $this->request->relative_url;
-
+		// if the url is for an asset file, serve it.
+		if (str_starts_with($this->request->relative_url, '/assets') && file_exists(__APP__ . $this->request->relative_url)) {
+			$mime = mime_content_type(__APP__ . $this->request->relative_url);
+			header('Content-Type: ' . $mime);
+			readfile(__APP__ . $this->request->relative_url);
+			return;
+		}
+				
 		// get the route.
+		$url = $this->is_new ? '/' : $this->request->relative_url;
 		$route = isset($this->routes[$url]) ? $this->routes[$url] : null;
 
 		// nullify if route does not support the request method.
@@ -81,6 +89,7 @@ class App {
 			exit;
 		}
 		
+		// nothing found so throw a 404.
 		http_response_code(404);
 		header('Content-Type: text/plain');
 		echo "404 - Error page $url not found.";
@@ -91,7 +100,13 @@ class App {
 	 * Called when the setup needs to be displayed, see index.php
 	 */
 	function run_setup() {
+		// load twig.
+		$loader = new \Twig\Loader\FilesystemLoader(__APP__ . '/system/templates');
 		global $twig;
+		$twig = new \Twig\Environment($loader);
+		$twig->addGlobal('app', $this);
+		$twig->addExtension(new MosTwigExtensions());
+
 		// add a setup controller.
 		define('SITE_NAME', 'Mosaic CMS');
 		$twig->addGlobal('SITE_NAME', SITE_NAME);

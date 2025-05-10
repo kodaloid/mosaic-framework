@@ -34,18 +34,7 @@ class SetupController extends Controller {
 			}
 		}
 
-		if (empty($vars->db_host)) {
-			$errors->add('db_host', 'Database Host can not be empty.');
-		}
-
-		if (empty($vars->db_name)) {
-			$errors->add('db_name', 'Database Name can not be empty.');
-		}
-
-		$conn = @new mysqli($vars->db_host, $vars->db_user, $vars->db_pass, $vars->db_name);
-		if ($conn->connect_errno) {
-			$errors->add('db', 'Failed to connect to database, ' . $conn->connect_error);
-		}
+		// todo: validate db connection?
 
 		return $errors;
 	}
@@ -73,12 +62,14 @@ class SetupController extends Controller {
 
 		$code = str_replace('[errors]', $code_err, $code);
 		
+		$code = str_replace('[db_type]', $vars->db_type, $code);
 		$code = str_replace('[db_host]', $vars->db_host, $code);
 		$code = str_replace('[db_name]', $vars->db_name, $code);
 		$code = str_replace('[db_user]', $vars->db_user, $code);
 		$code = str_replace('[db_pass]', $vars->db_pass, $code);
 
 		$code = str_replace('[login_enabled]', $vars->disable_login ? 'false' : 'true', $code);
+		$code = str_replace('[otp_enabled]', $vars->disable_otp ? 'false' : 'true', $code);
 		$code = str_replace('[login_salt]', $password_salt, $code);
 
 		return $code;
@@ -102,6 +93,7 @@ class SetupController extends Controller {
 		define('SITE_NAME', '[site_name]');
 				
 		// Database.
+		define('DB_TYPE', '[db_type]');
 		define('DB_HOST', '[db_host]');
 		define('DB_NAME', '[db_name]');
 		define('DB_USER', '[db_user]');
@@ -112,6 +104,7 @@ class SetupController extends Controller {
 		define('OBJECT', 1);
 				
 		// Login System
+		define('OTP_ENABLED', [otp_enabled]);
 		define('LOGIN_ENABLED', [login_enabled]);
 		define('PASSWORD_SALT', '[login_salt]');
 				
@@ -134,10 +127,12 @@ class SetupController extends Controller {
 			'time_zone'		=> 'Europe/London',
 			'show_errors'	=> true,
 			'disable_login'=> false,
+			'disable_otp'  => false,
 			'admin_user'	=> '',
 			'admin_email'	=> '',
 			'admin_pass'	=> '',
-			'db_host'		=> 'localhost',
+			'db_type'		=> 'sqlite',
+			'db_host'		=> '/assets/database.sqlite',
 			'db_name'		=> '',
 			'db_port'		=> '',
 			'db_user'		=> '',
@@ -151,9 +146,11 @@ class SetupController extends Controller {
 				'time_zone'		=> $app->request->post('time_zone'),
 				'show_errors'	=> $app->request->post('show_errors') == 'yes',
 				'disable_login'=> $app->request->post('disable_login') == 'yes',
+				'disable_otp'  => $app->request->post('disable_otp')== 'yes',
 				'admin_user'	=> $app->request->post('admin_user'),
 				'admin_email'	=> $app->request->post('admin_email'),
 				'admin_pass'	=> $app->request->post('admin_pass'),
+				'db_type'		=> $app->request->post('db_type'),
 				'db_host'		=> $app->request->post('db_host'),
 				'db_name'		=> $app->request->post('db_name'),
 				'db_port'		=> $app->request->post('db_port'),
@@ -163,7 +160,7 @@ class SetupController extends Controller {
 
 			$errors = $this->validate_setup($vars);
 			if ($errors->count > 0) {
-				return $this->view('setup/setup', array(
+				return $this->view('setup', array(
 					'old' => $vars,
 					'current_url' => $current_url,
 					'errors' => $errors->toArray(),
@@ -186,14 +183,19 @@ class SetupController extends Controller {
 
 			if ($has_login) {
 				// setup db connection so we can create the admin.
+				define('DB_TYPE', $vars->db_type);
+				define('DB_HOST', $vars->db_host);
+				define('DB_NAME', $vars->db_name);
+				define('DB_USER', $vars->db_user);
+				define('DB_PASS', $vars->db_pass);
 				$GLOBALS['db'] = $db = new MosDatabase;
-				$db->connect_manual($vars->db_host, $vars->db_name, $vars->db_user, $vars->db_pass);
 
-				// create the user.
-				$user_res = $app->session->create_user($vars->admin_user, $vars->admin_email, $vars->admin_pass);
-				$user_id = $user_res->id;
-
-				$otp_image = $app->session->get_otp_image($user_res->id, $vars->site_name);
+				if ($vars->db_type !== 'none') {
+					// create the user.
+					$user_res  = $app->session->create_user($vars->admin_user, $vars->admin_email, $vars->admin_pass);
+					$user_id   = $user_res->id;
+					$otp_image = $app->session->get_otp_image($user_res->id, $vars->site_name);
+				}
 			}
 
 			// generate the config.php file.
@@ -201,13 +203,13 @@ class SetupController extends Controller {
 			file_put_contents(__APP__ . '/config.php', $code);
 
 			// finally show view asking admin to configure 2fa before login.
-			return $this->view('setup/setup-complete', array(
+			return $this->view('setup-complete', array(
 				'has_login' => $has_login,
 				'otp_image' => $otp_image
 			));
 		}
 
-		return $this->view('setup/setup', array(
+		return $this->view('setup', array(
 			'old' => $vars,
 			'current_url' => $current_url,
 			'errors' => [],

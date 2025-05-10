@@ -1,4 +1,8 @@
+assets/database.sqlite
 node_modules
 vendor
+composer.lock
 package-lock.json
 config.php
+config.php.disabled
+php.ini

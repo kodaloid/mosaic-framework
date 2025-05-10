@@ -1,32 +1,67 @@
 # Mosaic CMS
 
-Mosaic is a compact framework for building modern PHP websites, with a built-in 
-login system (inc. OTP/2FA support), SASS style sheets, Twig for templating, 
-TypeScript and Bootstrap out of the box.
+Mosaic is a compact boiler-plate for building PHP applications, with MySQL & 
+SQLite access, a built-in login system with OTP/2FA support, SASS/CSS, Twig 
+page templates, TypeScript and Bootstrap out of the box.
 
-Plenty of systems out there can be used to build modern websites, and most tailor
-for modern JavaScript frameworks like React/Vue. But those features comes at the 
-cost of making a lot of what PHP does best redundant.
-
-The purpose of Mosaic is be a PHP only boiler-plate, that works a lot like
-Laravel, without the bloat, and avoiding the tangled mess of JavaScript to PHP 
-bootstrap techniques.
+I built this over time whilst getting fed up with other frameworks like SlimPHP
+and Laravel due to how bloated they can be. You don't have to go out of your way
+to code 100 files to get a website up and running, this just works out of the
+box, and has a tiny footprint making it easy to learn.
 
 ## Requirements
 
-This framework requires the following to be available:
-
-- PHP 8.1 or newer.
-- MySQLi Compatible Database Server.
+This project requires that you have PHP 8.2 or newer installed somewhere on
+your system, [Composer](https://getcomposer.org/) for dependencies, 
+[NodeJS](https://nodejs.org/en/download) (optional) if you want to use the 
+SASS & TypeScript features, and access 
+to a terminal. 
 
 ## How To Install
 
-First create a database on your MySQLi compatible server. Then visit your website
-URL and walk through the process on setting up the database, and creating a new 
-admin user (if required).
+Boot up your terminal, then follow these instructions:
+
+```shell
+# make a directory
+mkdir my-app
+cd my-app
+
+# clone this repo
+git clone https://github.com/kodaloid/mosaic-cms .
+
+# get composer to prepare dependencies
+composer install
+
+# also prepare the node dependencies (if using SASS or TypeScript)
+npm install
+
+# start the project (uses built-in php live server)
+composer start
+```
+
+By default the live server will launch at http://localhost:8080 however this can
+be reconfigured in `composer.json` if needed.
+
+The first thing you should do is visit the live server link, which will present
+the setup screen. The setup screen is used to build a `config.php` file with all
+the needed info like website name, time zone info, and database credentials.
 
 That's all!
 
+## Login System & OTP Authentication
+
+Implementing authentication is an important part of building a website that's
+anything other than static. But it's also a tedious process that if not done
+right can cause many problems down the road. So to remove the headache, Mosaic
+comes with a modern login system out of the box.
+
+When you first setup the website, you'll be presented with a QR code that can be
+scanned with an Authenticator mobile app (I recommend Google Authenticator,
+but others like Authy will work as well). This code will be required along side
+user & password when logging in.
+
+OTP Authentication can be turned off, including the login system if you do not
+need them,
 
 ## Routes
 
@@ -39,7 +74,9 @@ default that links to the `about()` method in the `controllers/PageController`
 class. The method we use to define a route like this:
 
 ```php
-$app->route($url, $class_name, $method [, $http_methods])
+$app->route(string $url, string $class, string $func, array $http_methods)
+
+// example: $app->route('/about', 'PageController', 'about')
 ```
 
 The optional `$http_methods` variable defaults to `['GET']` which means you can 
@@ -84,7 +121,6 @@ access:
 ```php
 function list_people(App $app) {
 	global $db;
-
 	return $this->view('people_list', [
 		'people' => $db->select('SELECT * FROM people')
 	]);
@@ -93,11 +129,25 @@ function list_people(App $app) {
 
 ### Selecting Single Row
 
+The database is implemented using PDO, which means you can use ? notation when
+preparing statements like this:
+
 ```php
 function get_user(int $user_id) {
 	global $db;
 	return $db->select_row($db->prepare(
 		'SELECT * FROM users WHERE id = ?', 'i', [$user_id]
+	));
+}
+```
+
+Or you can also use magic markers with a keyed array of data like this:
+
+```php
+function get_user(int $user_id) {
+	global $db;
+	return $db->select_row($db->prepare(
+		'SELECT * FROM users WHERE id = :id', null, [':id' => $user_id]
 	));
 }
 ```
@@ -129,19 +179,20 @@ function update_user_email(string $name, int $age) {
 
 ## Plugins
 
-You may find a need to extend the functionality of Mosaic website. Commonly the wish is to wrap up methods into a utility that can be accessed anywhere. So Mosaic
-provides a simple plugin system.
+You may find a need to extend the functionality of your application. Commonly 
+the wish is to wrap up methods into a utility that can be accessed anywhere. So 
+I've provided a simple plugin system.
 
-To load a plugin, we do something similar to routes. In the `index.php` file you'll
-see a line that looks like this:
+To load a plugin, we do something similar to routes. In the `index.php` file 
+you'll see a line that looks like this:
 
 ```php
 $app->add_plugin('test', 'TestTool');
 ```
 
-This instantiates the example test plugin found under `plugins/TestTool.php`, and
-sets it as a property belonging to the `$app` global named `test`. Later on if we
-wish to use `say_hello()` method, we could do something like this:
+This instantiates the example test plugin found under `plugins/TestTool.php`, 
+and sets it as a property belonging to the `$app` global named `test`. Later on 
+if we wish to use `say_hello()` method, we could do something like this:
 
 ```php
 global $app;
@@ -164,7 +215,7 @@ JavaScript, and other assets like images should reside in the `dist` folder. The
 This project includes a `package.json` file with a number of useful scripts. To
 use them first make sure you have NodeJS installed, then in the terminal type `npm install` (only needs to be done once) to download the necessary dependencies.
 
-To compile both SASS and TypeScript, you can then use either `npm run dev` (startup watch on both compilers) or `npm run prod` to compile once.
+To compile both SASS and TypeScript, you can then use either `npm run dev` (start-up watch on both compilers) or `npm run prod` to compile once.
 
 
 ## Conclusion

@@ -1,49 +1,57 @@
 <?php
 
 class MosDatabase {
-	private $conn;
+	private ?PDO $conn;
+	public readonly bool $disabled;
 
 	
 	function __construct() {
-		/* You should enable error reporting for mysqli before attempting to make a connection */
-		mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-	}
-
-
-	/**
-	 * Connect using default details.
-	 */
-	function connect_default() {
-		/* Set the desired charset after establishing a connection */
-		$this->conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-		$this->conn->set_charset(DB_CHARSET);
-	}
-
-
-	/**
-	 * Connect using custom details.
-	 */
-	function connect_manual(string $host, string $name, string $user, string $pass) {
-		/* Set the desired charset after establishing a connection */
-		$this->conn = new mysqli($host, $user, $pass, $name);
-		$this->conn->set_charset(DB_CHARSET);
+		switch (DB_TYPE) {
+			case 'mysql':
+				$this->conn = new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME.';charset='.DB_CHARSET, DB_USER, DB_PASS); 
+				$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+				$this->disabled = false;
+				break;
+			case 'sqlite':
+				$file = str_starts_with(DB_HOST, '/') ? __APP__ . DB_HOST : DB_HOST;
+				$this->conn = new PDO('sqlite:' . $file);
+				$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+				$this->disabled = false;
+				break;
+			// case 'firebird':
+			// case 'odbc':
+			default:
+				$this->disabled = true;
+				break;
+		}
 	}
 
 
 	/**
 	 * Create a prepared statement.
 	 */
-	function prepare(string $query, string $types, array $data) {
-		$stmt = $this->conn->prepare($query);
-		$params = [];
-
-		$params[] = &$types;
-		for ($i=0; $i<count($data); $i++) $params[] = &$data[$i];
-
-		//$stmt->bind_param($types, ...$params);
-		call_user_func_array(array($stmt, 'bind_param'), $params);
-
-		return $stmt;
+	function prepare(string $query, ?string $types, array $data) : ?PDOStatement {
+		if ($this->disabled) return null;
+		$stmt = $this->conn->prepare($query, [PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY]);
+		if ($stmt == false) {
+			trigger_error(implode("\n", $this->conn->errorInfo()), E_USER_ERROR);
+		}
+		if ($stmt) {
+			$i=0;
+			foreach ($data as $key => &$value) {
+				$type = PDO::PARAM_STR;
+				if (!is_null($types)) {
+					switch ($types[$i++]) {
+						case 'i': $type = PDO::PARAM_INT; break;
+						case 'b': $type = PDO::PARAM_BOOL; break;
+					}
+				}
+				$key = is_numeric($key) ? $key + 1 : $key;
+				$stmt->bindParam($key, $value, $type);
+			}
+			return $stmt;
+		}
+		return null;
 	}
 
 
@@ -55,20 +63,27 @@ class MosDatabase {
 	}
 
 
+	function is_established() {
+		return $this->conn;
+	}
+
+
 	/**
-	 * @param string|\mysqli_stmt $query;
+	 * @param string|PDOStatement $query;
 	 */
-	function select($query, $type = OBJECT) {
+	function select($query, $type = OBJECT) : ?array {
+		if ($this->disabled) return null;
+
 		$stmt = is_string($query) ? $this->conn->prepare($query) : $query;
 		
 		# execute stmt or reports errors
-		$stmt->execute() or trigger_error($stmt->error, E_USER_ERROR);
+		$stmt->execute() or trigger_error(implode("\n", $stmt->errorInfo()), E_USER_ERROR);
 
 		# save data or reports errors
-		($stmt_result = $stmt->get_result()) or trigger_error($stmt->error, E_USER_ERROR);
+		($stmt_result = $stmt->fetchAll()) or trigger_error(implode("\n", $stmt->errorInfo()), E_USER_ERROR);
 
 		$result = [];
-		while($row = $stmt_result->fetch_assoc()) {
+		foreach ($stmt_result as $row) {
 			$result[] = ($type == OBJECT) ? (object)$row : $row;
 		}
 
@@ -79,7 +94,9 @@ class MosDatabase {
 	/**
 	 * @param string|\mysqli_stmt $query;
 	 */
-	function select_row($query, $type = OBJECT) {
+	function select_row($query, $type = OBJECT) : ?object {
+		if ($this->disabled) return null;
+
 		$rows = $this->select($query, $type);
 		return $rows[0] ?? null;
 	}
@@ -92,14 +109,14 @@ class MosDatabase {
 		$stmt = is_string($query) ? $this->conn->prepare($query) : $query;
 		
 		# execute stmt or reports errors
-		$stmt->execute() or trigger_error($stmt->error, E_USER_ERROR);
+		$stmt->execute() or trigger_error(implode("\n", $stmt->errorInfo()), E_USER_ERROR);
 	}
 
 
 	/**
 	 * Get the last inserted row id.
 	 */
-	function insert_id() {
-		return $this->conn->insert_id;
+	function insert_id() : ?int {
+		return $this->disabled ? null : $this->conn->lastInsertId();
 	}
 }

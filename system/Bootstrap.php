@@ -2,8 +2,8 @@
 
 
 // get the config file.
-if (file_exists('config.php')) {
-	include 'config.php';
+if (file_exists(__APP__ . '/config.php')) {
+	include __APP__ . '/config.php';
 }
 
 
@@ -13,6 +13,12 @@ require_once __APP__ . "/vendor/autoload.php";
 
 // add autoload handler.
 spl_autoload_register(function ($class) {
+	$file = __APP__ . "/system/controllers/{$class}.php";
+	if (file_exists($file)) {
+		require_once $file;
+		return;
+	}
+
 	$file = __APP__ . "/controllers/{$class}.php";
 	if (file_exists($file)) {
 		require_once $file;

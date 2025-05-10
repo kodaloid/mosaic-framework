@@ -7,7 +7,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `users` (
 	`id` int(11) NOT NULL AUTO_INCREMENT,
-	`username` varchar(48) NOT NULL,
+	`username` varchar(48) NOT NULL UNIQUE,
 	`email` varchar(64) NOT NULL,
 	`pass_hash` text NOT NULL,
 	`otp_secret` text NOT NULL,
