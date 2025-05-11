@@ -25,6 +25,9 @@ class MosTools {
 	}
 
 
+	/**
+	 * Generate a list of time zones.
+	 */
 	function GenerateTimezoneList() {
 		static $time_zones = null;
     
@@ -47,14 +50,20 @@ class MosTools {
 	}
 
 	
-	function FormatGmtOffset($offset) {
+	/**
+	 * Format a timezone offset.
+	 */
+	private function FormatGmtOffset($offset) {
 		$hours = intval($offset / 3600);
 		$minutes = abs(intval($offset % 3600 / 60));
 		return 'GMT' . ($offset!==false ? sprintf('%+03d:%02d', $hours, $minutes) : '');
   	}
   
 	
-	function FormatTimezoneName($name) {
+	/**
+	 * Format a timezone name.
+	 */
+	private function FormatTimezoneName($name) {
 		$name = str_replace('/', ', ', $name);
 		$name = str_replace('_', ' ', $name);
 		$name = str_replace('St ', 'St. ', $name);

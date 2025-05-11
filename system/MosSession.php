@@ -8,13 +8,15 @@ use OTPHP\TOTP;
  * and 2FA OTP processing.
  */
 class MosSession {
-	private $_logged_in;
-	private $_user_id;
+	private bool $_logged_in;
+	private ?string $_user_id;
+	private string $_user_roles;
 
 
 	function __construct() {
 		$this->_logged_in = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] == 'yes';
 		$this->_user_id = $this->_logged_in && isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+		$this->_user_roles = $this->_logged_in && isset($_SESSION['user_roles']) ? $_SESSION['user_roles'] : '';
 	}
 
 
@@ -29,18 +31,27 @@ class MosSession {
 	/**
 	 * Get the current user.
 	 */
-	function current_user() {
+	function current_user() : ?object {
 		return $this->get_user($this->_user_id);
+	}
+
+
+	/**
+	 * Get the current user's roles.
+	 */
+	function current_user_roles() : array {
+		return explode(',', $this->_user_roles) ?? [];
 	}
 
 
 	/**
 	 * Perform a login.
 	 */
-	public function login(string $user_id, ?string $redirect = null) {
+	public function login(object $user, ?string $redirect = null) {
 		global $app;
 		$this->_logged_in = $_SESSION['logged_in'] = 'yes';
-		$this->_user_id = $_SESSION['user_id'] = $user_id;
+		$this->_user_id = $_SESSION['user_id'] = $user->id;
+		$this->_user_roles = $_SESSION['user_roles'] = $user->user_roles;
 
 		$redirect = $redirect ?? SITE_URL;
 		if (false !== $redirect && !is_null($redirect)) {
@@ -57,6 +68,7 @@ class MosSession {
 		session_destroy();
 		$this->_logged_in = false;
 		$this->_user_id = null;
+		$this->_user_roles = "";
 
 		$redirect = $redirect ?? SITE_URL;
 		if (false !== $redirect && !is_null($redirect)) {
@@ -75,12 +87,13 @@ class MosSession {
 		$otp_secret = $otp->getSecret();
 		$pwd_peppered = hash_hmac("sha256", $password, PASSWORD_SALT);
 
-		$ins_query = "INSERT INTO users (username, email, pass_hash, otp_secret, date_created) VALUES (?,?,?,?,?)";
+		$ins_query = "INSERT INTO users (username, email, pass_hash, otp_secret, user_roles, date_created) VALUES (?,?,?,?,?,?)";
 		$stmt = $db->prepare($ins_query, "sssss", array(
 			$username,
 			$email,
 			password_hash($pwd_peppered, PASSWORD_ARGON2ID),
 			$otp_secret,
+			'admin',
 			$db->now()
 		));
 		
@@ -96,9 +109,8 @@ class MosSession {
 	/**
 	 * Get a user by it's id.
 	 */
-	function get_user(int $user_id) {
-		global $db;
-		return $db->select_row($db->prepare(
+	function get_user(int $user_id) : ?object {
+		global $db; return $db->select_row($db->prepare(
 			'SELECT * FROM users WHERE id = ?', 'i', [$user_id]
 		));
 	}
@@ -108,8 +120,7 @@ class MosSession {
 	 * Get a user by the username.
 	 */
 	function get_user_by_username(string $username) {
-		global $db;
-		return $db->select_row($db->prepare(
+		global $db; return $db->select_row($db->prepare(
 			'SELECT * FROM users WHERE username = ?', 's', [$username]
 		));
 	}

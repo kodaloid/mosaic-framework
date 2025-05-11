@@ -4,6 +4,7 @@ CREATE TABLE "users" (
 	"email"	TEXT NOT NULL,
 	"pass_hash"	TEXT NOT NULL,
 	"otp_secret"	TEXT NOT NULL,
+	"user_roles" TEXT NOT NULL,
 	"date_created"	TEXT NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );

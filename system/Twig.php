@@ -3,6 +3,10 @@
 use \Twig\Extension\AbstractExtension;
 use \Twig\TwigFilter;
 
+
+/**
+ * Extend twig adding features for Mosaic.
+ */
 class MosTwigExtensions extends AbstractExtension {
     public function getFilters() {
         return [

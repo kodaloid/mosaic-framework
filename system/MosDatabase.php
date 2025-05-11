@@ -1,10 +1,17 @@
 <?php
 
+
+/**
+ * The database engine.
+ */
 class MosDatabase {
 	private ?PDO $conn;
 	public readonly bool $disabled;
 
 	
+	/**
+	 * Database constructor.
+	 */
 	function __construct() {
 		switch (DB_TYPE) {
 			case 'mysql':
@@ -63,6 +70,10 @@ class MosDatabase {
 	}
 
 
+	/**
+	 * Check to see if the connection has been established (does not guarantee
+	 * that it is still available).
+	 */
 	function is_established() {
 		return $this->conn;
 	}

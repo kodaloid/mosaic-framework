@@ -1,5 +1,6 @@
 <?php
 
+
 /**
  * Handles information to do with the request made.
  */
@@ -7,6 +8,9 @@ class MosRequest {
 	private $_info;
 
 
+	/**
+	 * Request constructor.
+	 */
 	function __construct() {
 		// deduce some information about the request.
 		$method = $_SERVER['REQUEST_METHOD'];

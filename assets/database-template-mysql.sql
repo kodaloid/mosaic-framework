@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`email` varchar(64) NOT NULL,
 	`pass_hash` text NOT NULL,
 	`otp_secret` text NOT NULL,
+	`user_roles` text NOT NULL,
 	`date_created` datetime NOT NULL,
 	PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;

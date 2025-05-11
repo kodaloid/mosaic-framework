@@ -14,10 +14,17 @@ class LoginController extends Controller {
 			$user		 = $app->session->get_user_by_username($username);
 
 			if ($app->session->validate_login($user, $pass)) {
-				if ($app->session->validate_otp($user, $code)) {
-					$app->session->login($user->id);
-					return $this->view('login', ['error' => 'Login Valid']);	
+				if (OTP_ENABLED) {
+					if ($app->session->validate_otp($user, $code)) {
+						$app->session->login($user);
+						return $this->view('login', ['error' => 'Login Valid']);
+					}
 				}
+				else {
+					$app->session->login($user);
+					return $this->view('login', ['error' => 'Login Valid']);
+				}
+				
 				return $this->view('login', ['error' => 'Invalid Login']);
 			}
 			else {

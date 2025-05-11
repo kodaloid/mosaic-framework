@@ -18,10 +18,12 @@
 					<input class="form-control" type="password" name="pass" />
 				</div>
 
+				{% if (OTP_ENABLED) %}
 				<div class="mb-3">
 					<label class="form-label">OTP Code</label>
 					<input class="form-control" type="text" name="code" />
 				</div>
+				{% endif %}
 
 				<button type="submit" class="btn btn-primary w-100 py-2 mt-4">Login</button>
 			</form>

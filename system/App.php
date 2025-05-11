@@ -4,16 +4,35 @@
  * The base app for Mosaic CMS
  */
 class App {
-	// an array of mapped routes.
-	private array $routes;
-	private array $plugins;
-	public MosRequest $request;
-	public MosSession $session;
-	public bool $is_new;
-	public MosTools $tools;
+	private static App $instance; // singleton instance.
+	private array $routes; // an array of mapped routes.
+	private array $plugins; // an array of loaded plugins.
+
+	/**
+	 * Information about the request.
+	 */
+	public readonly MosRequest $request;
+
+	/**
+	 * Information about the current session (login system).
+	 */
+	public readonly MosSession $session;
+
+	/**
+	 * Indicates whether a config.php file exists.
+	 */
+	public readonly bool $is_new;
+
+	/**
+	 * Various built-in tools.
+	 */
+	public readonly MosTools $tools;
 
 	
-	function __construct() {
+	/**
+	 * Constructor called by get_instance();
+	 */
+	private function __construct() {
 		$this->routes = [];
 		$this->plugins = [];
 		$this->request = new MosRequest();
@@ -26,6 +45,45 @@ class App {
 			$this->route("/login/", 'LoginController', 'login', ['GET', 'POST']);
 			$this->route("/logout", 'LoginController', 'logout');
 		}
+	}
+
+
+	/**
+	 * Get the app instance.
+	 */
+	static function get_instance() : App {
+		if (!isset(self::$instance)) {
+			self::$instance = new self;
+		}
+      return self::$instance;
+	}
+
+
+	/**
+	 * Initialize this app (Setup Twig & Database).
+	 */
+	function initialize() :bool {
+		// handle missing setup.
+		if ($this->is_new) {
+			$this->run_setup();
+			return false;
+		}
+
+		// load twig.
+		global $twig;
+		$loader = new \Twig\Loader\FilesystemLoader(__APP__ . '/templates');
+		$twig = new \Twig\Environment($loader);
+		$twig->addExtension(new MosTwigExtensions());
+
+		// init the database & globals.
+		global $db;
+		$db = new MosDatabase;
+		$twig->addGlobal('app', $this);
+		$twig->addGlobal('SITE_URL', SITE_URL);
+		$twig->addGlobal('SITE_NAME', SITE_NAME);
+		$twig->addGlobal('OTP_ENABLED', OTP_ENABLED);
+		$twig->addGlobal('LOGIN_ENABLED', LOGIN_ENABLED);
+		return true;
 	}
 
 
@@ -85,7 +143,18 @@ class App {
 		if (!is_null($route)) {
 			$this->request->route = $route->scheme;
 			$method = $route->method;
-			echo (new $route->controller())->$method($this);
+			$class_instance = new $route->controller();
+
+			$roles = $this->session->current_user_roles();
+			if ($class_instance->any_role_is_within_constraints($method, $roles)) {
+				echo $class_instance->$method($this);
+			}
+			else {
+				// nothing found so throw a 404.
+				http_response_code(403);
+				header('Content-Type: text/plain');
+				echo "403 - Access Denied.";
+			}
 			exit;
 		}
 		
