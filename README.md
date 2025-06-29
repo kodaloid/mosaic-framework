@@ -1,4 +1,4 @@
-# Mosaic CMS
+# Mosaic Framework
 
 Mosaic is a compact boiler-plate for building PHP applications, with MySQL & 
 SQLite access, a built-in login system with OTP/2FA support, SASS/CSS, Twig 
