@@ -27,7 +27,7 @@ mkdir my-app
 cd my-app
 
 # clone this repo
-git clone https://github.com/kodaloid/mosaic-cms .
+git clone https://github.com/kodaloid/mosaic-framework .
 
 # get composer to prepare dependencies
 composer install
